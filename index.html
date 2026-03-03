@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGNAL/NOISE — Enterprise OSINT for Technical Due Diligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(148, 163, 184, 0.1);
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            pointer-events: none;
+            z-index: 0;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        .bg-glow-2 {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            bottom: -100px;
+            left: -100px;
+            pointer-events: none;
+            z-index: 0;
+            animation: pulse 10s ease-in-out infinite reverse;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10rem 2rem 6rem;
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--accent-primary);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.125rem, 2vw, 1.5rem);
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Email Form */
+        .email-form-container {
+            max-width: 500px;
+            margin: 0 auto 4rem;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .email-form {
+            display: flex;
+            gap: 0.75rem;
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .email-form:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .email-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 1rem 1.25rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .email-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px var(--accent-glow);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .message {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .message.success {
+            display: flex;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .message.error {
+            display: flex;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Trust Badges */
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            opacity: 0.6;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Features Grid */
+        .features {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.7;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent-primary);
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Use Cases */
+        .use-cases {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+        }
+
+        .use-case-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 100px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .tab-btn:hover:not(.active) {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .use-case-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 3rem;
+            display: none;
+        }
+
+        .use-case-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .use-case-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .use-case-text h3 {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .use-case-text p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 1.0625rem;
+            line-height: 1.8;
+        }
+
+        .use-case-list {
+            list-style: none;
+            space-y: 0.75rem;
+        }
+
+        .use-case-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .use-case-list li i {
+            color: var(--accent-primary);
+            width: 20px;
+            height: 20px;
+        }
+
+        .code-block {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-block::before {
+            content: 'Query Example';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .code-block code {
+            display: block;
+            margin-top: 2rem;
+            color: var(--accent-primary);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .cta-box {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 24px;
+            padding: 4rem 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-box h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .cta-box p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1.125rem;
+        }
+
+        /* Footer */
+        footer {
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 8rem 1.5rem 4rem;
+            }
+
+            .email-form {
+                flex-direction: column;
+            }
+
+            .submit-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .use-case-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .use-case-content {
+                padding: 2rem 1.5rem;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <nav>
+        <a href="#" class="logo">
+            <div class="logo-icon">
+                <i data-lucide="radio"></i>
+            </div>
+            SIGNAL/NOISE
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#use-cases">Use Cases</a>
+            <a href="#waitlist">Join Waitlist</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="badge">
+            <span>Now in Private Beta</span>
+        </div>
+        <h1>Separate Signal from Noise in Technical Intelligence</h1>
+        <p class="hero-subtitle">
+            Enterprise OSINT platform for monitoring open-source intelligence across AI infrastructure, 
+            security compliance, and fintech systems. Know what matters before the market does.
+        </p>
+
+        <div class="email-form-container" id="waitlist">
+            <form class="email-form" id="emailForm">
+                <input 
+                    type="email" 
+                    class="email-input" 
+                    placeholder="Enter your work email" 
+                    required
+                    id="emailInput"
+                >
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Get Early Access</span>
+                    <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+                </button>
+            </form>
+            <div class="message" id="formMessage"></div>
+        </div>
+
+        <div class="trust-badges">
+            <div class="trust-badge">
+                <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+                <span>SOC 2 Compliant</span>
+            </div>
+            <div class="trust-badge">
+                <i data-lucide="lock" style="width: 16px; height: 16px;"></i>
+                <span>Enterprise SSO Ready</span>
+            </div>
+            <div class="trust-badge">
+                <i data-lucide="database" style="width: 16px; height: 16px;"></i>
+                <span>GDPR Compliant</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="section-header">
+            <h2>Three Verticals. One Platform.</h2>
+            <p>Monitor the technologies that matter most to your business with our specialized intelligence modules.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="brain-circuit" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h3>AI Infrastructure Intelligence</h3>
+                <p>Track production-grade inference engines by monitoring commits from OpenAI, Anthropic, and DeepMind engineers to open-source projects. Know which LLM serving stacks are battle-tested.</p>
+                <span class="feature-tag">vLLM • TGI • TensorRT-LLM</span>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="shield" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h3>Security & Compliance Radar</h3>
+                <p>Navigate NIST deadlines and EU CRA requirements. Correlate regulatory working group membership with actual OSS contributions to identify which SBOM tools will survive compliance mandates.</p>
+                <span class="feature-tag">SBOM • Zero Trust • Compliance</span>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="landmark" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h3>Fintech Infrastructure Monitor</h3>
+                <p>Discover what Stripe, Square, and Adyen actually use internally by mapping employee OSS contributions. Identify ledger systems and payment rails that scale.</p>
+                <span class="feature-tag">Payment Rails • Ledgers • Compliance</span>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="git-branch" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h3>Identity Resolution Engine</h3>
+                <p>Link identities across GitHub, arXiv, mailing lists, and job boards using ML-powered entity resolution. Track engineer movements and strategic shifts before they're announced.</p>
+                <span class="feature-tag">Entity Linking • Attribution</span>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="bell" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h3>Intelligent Alerting</h3>
+                <p>Create custom triggers based on commit patterns, regulatory filings, and market signals. Get notified when key engineers contribute to specific projects or when compliance deadlines approach.</p>
+                <span class="feature-tag">Real-time • Custom Rules</span>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-lucide="building-2" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h3>Enterprise-Ready Isolation</h3>
+                <p>Built on WorkOS for true multi-tenancy. SSO/SAML, SCIM provisioning, and audit logs ensure your intelligence stays compartmentalized and compliant.</p>
+                <span class="feature-tag">WorkOS • SSO • Audit Logs</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="use-cases" id="use-cases">
+        <div class="section-header">
+            <h2>Built for Technical Decision Makers</h2>
+            <p>See how different teams leverage SIGNAL/NOISE for competitive advantage.</p>
+        </div>
+
+        <div class="use-case-tabs">
+            <button class="tab-btn active" onclick="switchTab('vc')">VC & Investment</button>
+            <button class="tab-btn" onclick="switchTab('security')">Security Teams</button>
+            <button class="tab-btn" onclick="switchTab('fintech')">Fintech Infrastructure</button>
+        </div>
+
+        <div class="use-case-content active" id="vc">
+            <div class="use-case-grid">
+                <div class="use-case-text">
+                    <h3>Don't Get Blindsided by Infrastructure Shifts</h3>
+                    <p>Portfolio companies live and die by their technology choices. Monitor the open-source ecosystem to identify which infrastructure bets are paying off and which are fading.</p>
+                    <ul class="use-case-list">
+                        <li><i data-lucide="check-circle-2"></i> Track key engineer movements between AI labs</li>
+                        <li><i data-lucide="check-circle-2"></i> Monitor production usage patterns before they become public</li>
+                        <li><i data-lucide="check-circle-2"></i> Correlate OSS activity with market cap movements</li>
+                        <li><i data-lucide="check-circle-2"></i> Identify emerging standards before they dominate</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+                    <code>
+// Investment Signal Example
+Track engineers from: ["OpenAI", "Anthropic", "DeepMind"]
+Contributing to: ["vLLM", "text-generation-inference"]
+Time window: "Last 90 days"
+Signal strength: > 5 commits
+Alert when: New repo enters top 10
+                    </code>
+                </div>
+            </div>
+        </div>
+
+        <div class="use-case-content" id="security">
+            <div class="use-case-grid">
+                <div class="use-case-text">
+                    <h3>Navigate Compliance Deadlines with Confidence</h3>
+                    <p>Regulatory pressure is mounting. Know which security tools will survive NIST deadlines and which are just marketing hype by analyzing actual engineering activity.</p>
+                    <ul class="use-case-list">
+                        <li><i data-lucide="check-circle-2"></i> Monitor NIST working group member contributions</li>
+                        <li><i data-lucide="check-circle-2"></i> Track SBOM tool maintenance velocity</li>
+                        <li><i data-lucide="check-circle-2"></i> Correlate CVE patches with response times</li>
+                        <li><i data-lucide="check-circle-2"></i> Identify zero-trust architecture adoption patterns</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+                    <code>
+// Compliance Signal Example
+Track NIST group members contributing to:
+  - SBOM generators (SPDX, CycloneDX)
+  - Attestation frameworks
+  - Supply chain tools
+Flag: Projects with >3 maintainers 
+      AND >6 month activity gap
+                    </code>
+                </div>
+            </div>
+        </div>
+
+        <div class="use-case-content" id="fintech">
+            <div class="use-case-grid">
+                <div class="use-case-text">
+                    <h3>See What Actually Works at Scale</h3>
+                    <p>Before you build your next ledger system or payment rail, see what Stripe, Square, and Adyen actually use in production. Map employee contributions to understand internal tech stacks.</p>
+                    <ul class="use-case-list">
+                        <li><i data-lucide="check-circle-2"></i> Map fintech employee OSS contributions to employers</li>
+                        <li><i data-lucide="check-circle-2"></i> Identify ledger and accounting system choices</li>
+                        <li><i data-lucide="check-circle-2"></i> Track regulatory compliance tool adoption</li>
+                        <li><i data-lucide="check-circle-2"></i> Monitor payment rail architecture decisions</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+                    <code>
+// Fintech Signal Example
+Track employees of: ["Stripe", "Square", "Adyen", "Plaid"]
+Contributing to: ["ledger", "payment", "reconciliation"]
+Exclude: Personal projects
+Correlate with: Job posting tech stacks
+Confidence threshold: > 0.8
+                    </code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-box">
+            <div class="cta-content">
+                <h2>Join the Private Beta</h2>
+                <p>Be the first to access enterprise-grade OSINT. We're onboarding select teams now.</p>
+                <form class="email-form" id="emailFormBottom" style="max-width: 450px; margin: 0 auto;">
+                    <input 
+                        type="email" 
+                        class="email-input" 
+                        placeholder="Enter your work email" 
+                        required
+                        id="emailInputBottom"
+                    >
+                    <button type="submit" class="submit-btn" id="submitBtnBottom">
+                        <span>Request Access</span>
+                        <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+                    </button>
+                </form>
+                <div class="message" id="formMessageBottom" style="max-width: 450px; margin: 1rem auto 0;"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Security</a>
+            <a href="mailto:hello@signalnoise.io">Contact</a>
+        </div>
+        <p>&copy; 2024 SIGNAL/NOISE. Built for technical intelligence teams.</p>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.use-case-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            // Re-initialize icons in new content
+            lucide.createIcons();
+        }
+
+        // Form handling
+        function handleFormSubmit(formId, emailId, btnId, messageId) {
+            const form = document.getElementById(formId);
+            const emailInput = document.getElementById(emailId);
+            const submitBtn = document.getElementById(btnId);
+            const message = document.getElementById(messageId);
+            const btnText = submitBtn.querySelector('span');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = emailInput.value;
+                
+                // Basic validation
+                if (!email || !email.includes('@')) {
+                    showMessage(message, 'Please enter a valid email address.', 'error');
+                    return;
+                }
+
+                // Loading state
+                submitBtn.classList.add('loading');
+                btnText.textContent = 'Joining...';
+                const originalIcon = submitBtn.querySelector('i');
+                originalIcon.style.display = 'none';
+                
+                const spinner = document.createElement('div');
+                spinner.className = 'spinner';
+                submitBtn.appendChild(spinner);
+
+                try {
+                    // Simulate API call - Replace with your actual endpoint
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Here you would typically send to your backend:
+                    // const response = await fetch('/api/waitlist', {
+                    //     method: 'POST',
+                    //     headers: { 'Content-Type': 'application/json' },
+                    //     body: JSON.stringify({ email, source: 'landing_page' })
+                    // });
+
+                    showMessage(message, 'You\'re on the list! We\'ll be in touch soon.', 'success');
+                    emailInput.value = '';
+                    
+                } catch (error) {
+                    showMessage(message, 'Something went wrong. Please try again.', 'error');
+                } finally {
+                    submitBtn.classList.remove('loading');
+                    btnText.textContent = formId === 'emailForm' ? 'Get Early Access' : 'Request Access';
+                    submitBtn.removeChild(spinner);
+                    originalIcon.style.display = 'block';
+                }
+            });
+        }
+
+        function showMessage(element, text, type) {
+            element.textContent = text;
+            element.className = `message ${type}`;
+            
+            // Add icon
+            const icon = document.createElement('i');
+            icon.setAttribute('data-lucide', type === 'success' ? 'check-circle-2' : 'alert-circle');
+            icon.style.width = '16px';
+            icon.style.height = '16px';
+            element.insertBefore(icon, element.firstChild);
+            lucide.createIcons();
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                element.className = 'message';
+            }, 5000);
+        }
+
+        // Initialize both forms
+        handleFormSubmit('emailForm', 'emailInput', 'submitBtn', 'formMessage');
+        handleFormSubmit('emailFormBottom', 'emailInputBottom', 'submitBtnBottom', 'formMessageBottom');
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add parallax effect to glows
+        document.addEventListener('mousemove', (e) => {
+            const glows = document.querySelectorAll('.bg-glow, .bg-glow-2');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            glows[0].style.transform = `translate(${x * 30}px, ${y * 30}px)`;
+            glows[1].style.transform = `translate(${-x * 20}px, ${-y * 20}px)`;
+        });
+    </script>
+</body>
+</html>
